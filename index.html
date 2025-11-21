@@ -7,6 +7,11 @@
     <title>Virtual Mission Tracker</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -74,15 +79,21 @@
             color: #555;
         }
 
-        input[type="text"], input[type="number"] {
+        input[type="text"], input[type="number"], textarea {
             width: 100%;
             padding: 12px;
             border: 2px solid #e9ecef;
             border-radius: 8px;
             font-size: 1em;
+            font-family: inherit;
         }
 
-        input[type="text"]:focus, input[type="number"]:focus {
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
             outline: none;
             border-color: #667eea;
         }
@@ -266,6 +277,27 @@
             display: none;
         }
 
+        .firebase-setup {
+            background: #e7f5ff;
+            border: 2px solid #339af0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .firebase-setup h3 {
+            color: #1971c2;
+            margin-bottom: 10px;
+        }
+
+        .firebase-setup code {
+            background: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
         @media (max-width: 768px) {
             .main-content {
                 grid-template-columns: 1fr;
@@ -276,56 +308,7 @@
             }
         }
     </style>
-
-    <script>
-      
-      const files = {
-        
-      }
-    
-
-
-      window.fs = {}
-      window.fs.readFile = (fileName) => {
-        // return array buffer
-        return new Promise((resolve) => {
-          const content = files[fileName]
-          const decoded = atob(content)
-          const arr = new Uint8Array(decoded.length)
-          for (let i = 0; i < decoded.length; i++) {
-            arr[i] = decoded.charCodeAt(i)
-          }
-          resolve(arr)
-        })
-      }
-
-      // stub out window.user.get, window.db.get and window.db.set so that it works when you download the html doc
-      window.db = {}
-      window.db.get = (key) => {
-        // use localStorage to store the artifact
-        const value = localStorage.getItem(key)
-        if (value) {
-          return JSON.parse(value)
-        }
-
-        return null
-      }
-
-      window.db.set = (key, value) => {
-        // use localStorage to store the artifact
-        localStorage.setItem(key, JSON.stringify(value))
-      }
-
-      window.user = {}
-      window.user.get = () => {
-        return {
-          userId: "user-id-placeholder",
-          email: "placeholder@test.com"
-        }
-      }
-
-    </script>
-    </head>
+</head>
 <body>
     <div class="container">
         <div class="header">
@@ -333,8 +316,41 @@
             <p>Track your fitness challenges with friends!</p>
         </div>
 
+        <!-- Firebase Configuration Screen -->
+        <div id="firebaseSetupScreen" class="setup-screen">
+            <div class="setup-card">
+                <h2>🔧 Firebase Setup Required</h2>
+                
+                <div class="firebase-setup">
+                    <h3>First Time Setup:</h3>
+                    <p>This app needs Firebase to sync data between users. Don't worry - it's free and takes 5 minutes!</p>
+                    <p style="margin-top: 10px;"><strong>Follow the instructions below, then paste your Firebase config here.</strong></p>
+                </div>
+
+                <div class="input-group">
+                    <label>Firebase Configuration (JSON):</label>
+                    <textarea id="firebaseConfigInput" placeholder='Paste your Firebase config here, e.g.:
+{
+  "apiKey": "YOUR_API_KEY",
+  "authDomain": "your-app.firebaseapp.com",
+  "databaseURL": "https://your-app.firebaseio.com",
+  "projectId": "your-project-id",
+  "storageBucket": "your-app.appspot.com",
+  "messagingSenderId": "123456789",
+  "appId": "your-app-id"
+}'></textarea>
+                </div>
+
+                <button class="btn btn-primary" onclick="initializeFirebase()">Connect to Firebase</button>
+                
+                <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                    <p style="font-size: 0.9em; color: #666;"><strong>Need help?</strong> See the instructions in the README file that comes with this app.</p>
+                </div>
+            </div>
+        </div>
+
         <!-- Setup Screen -->
-        <div id="setupScreen" class="setup-screen">
+        <div id="setupScreen" class="setup-screen hidden">
             <div class="setup-card">
                 <h2>Welcome! Let's get started</h2>
                 
@@ -471,6 +487,11 @@
     </div>
 
     <script>
+        // Firebase variables
+        let db;
+        let firebaseInitialized = false;
+
+        // App variables
         let map;
         let currentUser = null;
         let isAdmin = false;
@@ -484,6 +505,89 @@
         
         const userColors = ['#667eea', '#51cf66', '#ff6b6b', '#ffd43b', '#845ef7', '#20c997'];
 
+        // Check if Firebase config is already saved
+        window.onload = function() {
+            const savedConfig = localStorage.getItem('firebaseConfig');
+            if (savedConfig) {
+                try {
+                    const config = JSON.parse(savedConfig);
+                    initializeFirebaseWithConfig(config);
+                } catch (e) {
+                    console.error('Error loading saved config:', e);
+                }
+            }
+        };
+
+        function initializeFirebase() {
+            const configText = document.getElementById('firebaseConfigInput').value.trim();
+            if (!configText) {
+                alert('Please paste your Firebase configuration!');
+                return;
+            }
+
+            try {
+                const config = JSON.parse(configText);
+                
+                // Validate config has required fields
+                if (!config.apiKey || !config.databaseURL) {
+                    alert('Invalid Firebase configuration. Make sure it includes apiKey and databaseURL.');
+                    return;
+                }
+
+                // Save config for future use
+                localStorage.setItem('firebaseConfig', configText);
+                
+                initializeFirebaseWithConfig(config);
+            } catch (e) {
+                alert('Invalid JSON format. Please check your configuration and try again.');
+                console.error('Parse error:', e);
+            }
+        }
+
+        function initializeFirebaseWithConfig(config) {
+            try {
+                firebase.initializeApp(config);
+                db = firebase.database();
+                firebaseInitialized = true;
+                
+                document.getElementById('firebaseSetupScreen').classList.add('hidden');
+                document.getElementById('setupScreen').classList.remove('hidden');
+                
+                console.log('Firebase initialized successfully!');
+            } catch (e) {
+                alert('Error connecting to Firebase: ' + e.message);
+                console.error('Firebase init error:', e);
+            }
+        }
+
+        // Database helper functions
+        async function dbGet(key) {
+            if (!firebaseInitialized) return null;
+            try {
+                const snapshot = await db.ref(key).once('value');
+                return snapshot.val();
+            } catch (e) {
+                console.error('Error reading from database:', e);
+                return null;
+            }
+        }
+
+        async function dbSet(key, value) {
+            if (!firebaseInitialized) return;
+            try {
+                await db.ref(key).set(value);
+            } catch (e) {
+                console.error('Error writing to database:', e);
+            }
+        }
+
+        function dbListen(key, callback) {
+            if (!firebaseInitialized) return;
+            db.ref(key).on('value', (snapshot) => {
+                callback(snapshot.val());
+            });
+        }
+
         // Initialize map
         function initMap() {
             map = L.map('map').setView([40.7128, -74.0060], 13);
@@ -493,7 +597,7 @@
                 maxZoom: 19
             }).addTo(map);
 
-            // Set up map click handler AFTER map is initialized
+            // Set up map click handler
             map.on('click', function(e) {
                 if (!selectingPoints || !isAdmin) return;
 
@@ -533,12 +637,10 @@
             });
         }
 
-        // Generate random challenge code
         function generateChallengeCode() {
             return Math.floor(100000 + Math.random() * 900000).toString();
         }
 
-        // Setup functions
         function createNewChallenge() {
             const username = document.getElementById('usernameInput').value.trim();
             if (!username) {
@@ -579,7 +681,7 @@
                 return;
             }
 
-            const challenge = await window.db.get(`challenge_${code}`);
+            const challenge = await dbGet(`challenges/${code}`);
             if (!challenge) {
                 alert('Challenge not found! Please check the code.');
                 return;
@@ -589,10 +691,10 @@
             isAdmin = false;
             
             // Add user to participants
-            let participants = await window.db.get(`participants_${code}`) || [];
+            let participants = await dbGet(`participants/${code}`) || [];
             if (!participants.includes(currentUser)) {
                 participants.push(currentUser);
-                await window.db.set(`participants_${code}`, participants);
+                await dbSet(`participants/${code}`, participants);
             }
 
             showMainScreen();
@@ -634,9 +736,13 @@
 
             initMap();
             loadData();
+            
+            // Listen for real-time updates
+            dbListen(`challenges/${challengeCode}`, loadData);
+            dbListen(`progress/${challengeCode}`, loadData);
+            dbListen(`participants/${challengeCode}`, loadData);
         }
 
-        // Map selection
         function startPointSelection() {
             selectingPoints = true;
             if (startMarker) map.removeLayer(startMarker);
@@ -672,10 +778,9 @@
                 created: new Date().toISOString()
             };
 
-            await window.db.set(`challenge_${challengeCode}`, challenge);
-            await window.db.set(`participants_${challengeCode}`, [currentUser]);
-            await window.db.set(`progress_${challengeCode}`, {});
-            await window.db.set(`activities_${challengeCode}`, {});
+            await dbSet(`challenges/${challengeCode}`, challenge);
+            await dbSet(`participants/${challengeCode}`, [currentUser]);
+            await dbSet(`progress/${challengeCode}`, {});
 
             document.getElementById('adminCard').style.display = 'none';
             loadData();
@@ -705,41 +810,31 @@
                 return;
             }
 
-            const challenge = await window.db.get(`challenge_${challengeCode}`);
+            const challenge = await dbGet(`challenges/${challengeCode}`);
             if (!challenge.allowedActivities.includes(selectedActivity)) {
                 alert('This activity type is not allowed for this challenge!');
                 return;
             }
 
-            let progress = await window.db.get(`progress_${challengeCode}`) || {};
-            let activities = await window.db.get(`activities_${challengeCode}`) || {};
+            let progress = await dbGet(`progress/${challengeCode}`) || {};
 
             if (!progress[currentUser]) progress[currentUser] = 0;
-            if (!activities[currentUser]) activities[currentUser] = [];
-
             progress[currentUser] += distance;
-            activities[currentUser].push({
-                type: selectedActivity,
-                distance: distance,
-                timestamp: new Date().toISOString()
-            });
 
-            await window.db.set(`progress_${challengeCode}`, progress);
-            await window.db.set(`activities_${challengeCode}`, activities);
+            await dbSet(`progress/${challengeCode}`, progress);
 
             document.getElementById('distanceInput').value = '';
-            loadData();
             alert('Activity logged successfully!');
         }
 
         async function loadData() {
             if (!challengeCode) return;
 
-            const challenge = await window.db.get(`challenge_${challengeCode}`);
+            const challenge = await dbGet(`challenges/${challengeCode}`);
             if (!challenge) return;
 
-            const progress = await window.db.get(`progress_${challengeCode}`) || {};
-            const participants = await window.db.get(`participants_${challengeCode}`) || [];
+            const progress = await dbGet(`progress/${challengeCode}`) || {};
+            const participants = await dbGet(`participants/${challengeCode}`) || [];
 
             // Update activity selector
             const activitySelector = document.getElementById('activityTypeSelector');
@@ -859,13 +954,6 @@
                 location.reload();
             }
         }
-
-        // Auto-refresh every 5 seconds
-        setInterval(() => {
-            if (challengeCode && !document.getElementById('mainScreen').classList.contains('hidden')) {
-                loadData();
-            }
-        }, 5000);
     </script>
 </body>
 </html>
