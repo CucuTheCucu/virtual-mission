@@ -79,7 +79,7 @@
             color: #555;
         }
 
-        input[type="text"], input[type="number"], textarea {
+        input[type="text"], input[type="number"], textarea, select {
             width: 100%;
             padding: 12px;
             border: 2px solid #e9ecef;
@@ -88,12 +88,17 @@
             font-family: inherit;
         }
 
+        select {
+            cursor: pointer;
+            background: white;
+        }
+
         textarea {
             min-height: 100px;
             resize: vertical;
         }
 
-        input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
+        input[type="text"]:focus, input[type="number"]:focus, textarea:focus, select:focus {
             outline: none;
             border-color: #667eea;
         }
@@ -195,6 +200,7 @@
             height: 600px;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            background: #e9ecef;
         }
 
         .progress-item {
@@ -298,6 +304,43 @@
             font-size: 0.9em;
         }
 
+        .map-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .map-option {
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .map-option:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .map-option.active {
+            border-color: #667eea;
+            background: #f0f3ff;
+        }
+
+        .map-option .icon {
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+
+        .map-option .label {
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
         @media (max-width: 768px) {
             .main-content {
                 grid-template-columns: 1fr;
@@ -389,7 +432,25 @@
                 
                 <div class="input-group">
                     <label>Challenge Name:</label>
-                    <input type="text" id="challengeNameInput" placeholder="e.g., NYC to LA">
+                    <input type="text" id="challengeNameInput" placeholder="e.g., Journey to Mordor">
+                </div>
+
+                <div class="input-group">
+                    <label>Choose Your Map:</label>
+                    <div class="map-selector">
+                        <div class="map-option active" data-map="realworld" onclick="selectMapType(this)">
+                            <div class="icon">🌍</div>
+                            <div class="label">Real World</div>
+                        </div>
+                        <div class="map-option" data-map="middleearth" onclick="selectMapType(this)">
+                            <div class="icon">🗻</div>
+                            <div class="label">Middle Earth</div>
+                        </div>
+                        <div class="map-option" data-map="wizarding" onclick="selectMapType(this)">
+                            <div class="icon">🧙‍♂️</div>
+                            <div class="label">Wizarding World</div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="input-group">
@@ -417,7 +478,7 @@
         <!-- Main Screen -->
         <div id="mainScreen" class="main-screen hidden">
             <div class="user-info">
-                <strong>Logged in as:</strong> <span id="currentUsername"></span>
+                <strong>Logged in as:</strong>   <span id="currentUsername"></span>
                 <button class="btn btn-danger" onclick="logout()" style="width: auto; float: right; padding: 8px 16px;">Logout</button>
             </div>
 
@@ -502,8 +563,36 @@
         let selectingPoints = false;
         let userMarkers = {};
         let selectedActivity = 'walk';
+        let selectedMapType = 'realworld';
+        let imageOverlay = null;
         
         const userColors = ['#667eea', '#51cf66', '#ff6b6b', '#ffd43b', '#845ef7', '#20c997'];
+
+        // Map configurations
+        const mapConfigs = {
+            realworld: {
+                name: 'Real World',
+                center: [40.7128, -74.0060],
+                zoom: 13,
+                type: 'tiles'
+            },
+            middleearth: {
+                name: 'Middle Earth',
+                center: [0, 0],
+                zoom: 2,
+                type: 'image',
+                imageUrl: 'https://i.imgur.com/6jXQYZm.jpg', // Middle Earth map
+                bounds: [[-90, -180], [90, 180]]
+            },
+            wizarding: {
+                name: 'Wizarding World',
+                center: [54.5, -3],
+                zoom: 6,
+                type: 'image',
+                imageUrl: 'https://i.imgur.com/rKvHYXN.jpg', // UK Wizarding map
+                bounds: [[-90, -180], [90, 180]]
+            }
+        };
 
         // Check if Firebase config is already saved
         window.onload = function() {
@@ -588,14 +677,35 @@
             });
         }
 
+        // Map type selection
+        function selectMapType(element) {
+            document.querySelectorAll('.map-option').forEach(opt => opt.classList.remove('active'));
+            element.classList.add('active');
+            selectedMapType = element.dataset.map;
+        }
+
         // Initialize map
         function initMap() {
-            map = L.map('map').setView([40.7128, -74.0060], 13);
+            const config = mapConfigs[selectedMapType];
             
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors',
-                maxZoom: 19
-            }).addTo(map);
+            map = L.map('map', {
+                crs: config.type === 'image' ? L.CRS.Simple : L.CRS.EPSG3857,
+                minZoom: config.type === 'image' ? 1 : 2,
+                maxZoom: config.type === 'image' ? 5 : 19
+            }).setView(config.center, config.zoom);
+            
+            if (config.type === 'tiles') {
+                // Real world map
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors',
+                    maxZoom: 19
+                }).addTo(map);
+            } else {
+                // Fantasy map with image overlay
+                const bounds = config.bounds;
+                imageOverlay = L.imageOverlay(config.imageUrl, bounds).addTo(map);
+                map.fitBounds(bounds);
+            }
 
             // Set up map click handler
             map.on('click', function(e) {
@@ -689,6 +799,7 @@
 
             challengeCode = code;
             isAdmin = false;
+            selectedMapType = challenge.mapType || 'realworld';
             
             // Add user to participants
             let participants = await dbGet(`participants/${code}`) || [];
@@ -774,6 +885,7 @@
                 end: { lat: end.lat, lng: end.lng },
                 distance: distance,
                 allowedActivities: allowedActivities,
+                mapType: selectedMapType,
                 creator: currentUser,
                 created: new Date().toISOString()
             };
@@ -788,6 +900,14 @@
         }
 
         function calculateDistance(lat1, lon1, lat2, lon2) {
+            // For fantasy maps, use simple Euclidean distance
+            if (selectedMapType !== 'realworld') {
+                const dx = lon2 - lon1;
+                const dy = lat2 - lat1;
+                return Math.sqrt(dx * dx + dy * dy) * 100; // Scale factor for reasonable distances
+            }
+            
+            // Real world: Haversine formula
             const R = 6371;
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLon = (lon2 - lon1) * Math.PI / 180;
@@ -853,10 +973,12 @@
             });
 
             // Update challenge info
+            const mapName = mapConfigs[challenge.mapType]?.name || 'Real World';
             const challengeInfo = document.getElementById('challengeInfo');
             challengeInfo.innerHTML = `
                 <div style="background: white; padding: 15px; border-radius: 8px;">
                     <p><strong>Name:</strong> ${challenge.name}</p>
+                    <p><strong>Map:</strong> ${mapName}</p>
                     <p><strong>Distance:</strong> ${challenge.distance.toFixed(2)} km</p>
                     <p><strong>Activities:</strong> ${challenge.allowedActivities.join(', ')}</p>
                     <p><strong>Participants:</strong> ${participants.length}</p>
