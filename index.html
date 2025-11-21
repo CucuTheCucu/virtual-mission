@@ -1,0 +1,871 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Mission Tracker</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .setup-screen, .main-screen {
+            padding: 40px;
+        }
+
+        .setup-screen {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .setup-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .setup-card h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        input[type="text"]:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #51cf66;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #40c057;
+        }
+
+        .btn-danger {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #fa5252;
+        }
+
+        .btn-secondary {
+            background: #868e96;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #6c757d;
+        }
+
+        .challenge-code {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 3px dashed #667eea;
+            margin: 20px 0;
+        }
+
+        .challenge-code h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .challenge-code .code {
+            font-size: 2em;
+            font-weight: bold;
+            color: #333;
+            letter-spacing: 3px;
+            font-family: monospace;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .card h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        #map {
+            height: 600px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .progress-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .progress-bar {
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+        }
+
+        .status-text {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .instructions {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .instructions p {
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+
+        .activity-selector {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .activity-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #e9ecef;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+
+        .activity-btn:hover {
+            border-color: #667eea;
+        }
+
+        .activity-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .user-info {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            #map {
+                height: 400px;
+            }
+        }
+    </style>
+
+    <script>
+      
+      const files = {
+        
+      }
+    
+
+
+      window.fs = {}
+      window.fs.readFile = (fileName) => {
+        // return array buffer
+        return new Promise((resolve) => {
+          const content = files[fileName]
+          const decoded = atob(content)
+          const arr = new Uint8Array(decoded.length)
+          for (let i = 0; i < decoded.length; i++) {
+            arr[i] = decoded.charCodeAt(i)
+          }
+          resolve(arr)
+        })
+      }
+
+      // stub out window.user.get, window.db.get and window.db.set so that it works when you download the html doc
+      window.db = {}
+      window.db.get = (key) => {
+        // use localStorage to store the artifact
+        const value = localStorage.getItem(key)
+        if (value) {
+          return JSON.parse(value)
+        }
+
+        return null
+      }
+
+      window.db.set = (key, value) => {
+        // use localStorage to store the artifact
+        localStorage.setItem(key, JSON.stringify(value))
+      }
+
+      window.user = {}
+      window.user.get = () => {
+        return {
+          userId: "user-id-placeholder",
+          email: "placeholder@test.com"
+        }
+      }
+
+    </script>
+    </head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏃 Virtual Mission Tracker</h1>
+            <p>Track your fitness challenges with friends!</p>
+        </div>
+
+        <!-- Setup Screen -->
+        <div id="setupScreen" class="setup-screen">
+            <div class="setup-card">
+                <h2>Welcome! Let's get started</h2>
+                
+                <div class="input-group">
+                    <label>Your Name:</label>
+                    <input type="text" id="usernameInput" placeholder="Enter your name">
+                </div>
+
+                <div class="input-group">
+                    <label>Do you want to:</label>
+                    <button class="btn btn-primary" onclick="createNewChallenge()" style="margin-bottom: 10px;">Create New Challenge</button>
+                    <button class="btn btn-secondary" onclick="showJoinScreen()">Join Existing Challenge</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Join Challenge Screen -->
+        <div id="joinScreen" class="setup-screen hidden">
+            <div class="setup-card">
+                <h2>Join a Challenge</h2>
+                
+                <div class="input-group">
+                    <label>Challenge Code:</label>
+                    <input type="text" id="challengeCodeInput" placeholder="Enter 6-digit code">
+                </div>
+
+                <button class="btn btn-success" onclick="joinChallenge()">Join Challenge</button>
+                <button class="btn btn-secondary" onclick="backToSetup()" style="margin-top: 10px;">Back</button>
+            </div>
+        </div>
+
+        <!-- Create Challenge Screen -->
+        <div id="createScreen" class="setup-screen hidden">
+            <div class="setup-card">
+                <h2>Create Your Challenge</h2>
+                
+                <div class="input-group">
+                    <label>Challenge Name:</label>
+                    <input type="text" id="challengeNameInput" placeholder="e.g., NYC to LA">
+                </div>
+
+                <div class="input-group">
+                    <label>Allowed Activities:</label>
+                    <div class="activity-selector">
+                        <button class="activity-btn active" data-activity="walk" onclick="toggleActivity(this)">🚶 Walk</button>
+                        <button class="activity-btn active" data-activity="run" onclick="toggleActivity(this)">🏃 Run</button>
+                        <button class="activity-btn active" data-activity="swim" onclick="toggleActivity(this)">🏊 Swim</button>
+                    </div>
+                </div>
+
+                <div class="instructions">
+                    <p><strong>Next Steps:</strong></p>
+                    <p>1. Click "Continue to Map"</p>
+                    <p>2. Click on map for start point (green)</p>
+                    <p>3. Click on map for end point (red)</p>
+                    <p>4. Finalize and share the code with friends!</p>
+                </div>
+
+                <button class="btn btn-primary" onclick="continueToMap()">Continue to Map</button>
+                <button class="btn btn-secondary" onclick="backToSetup()" style="margin-top: 10px;">Back</button>
+            </div>
+        </div>
+
+        <!-- Main Screen -->
+        <div id="mainScreen" class="main-screen hidden">
+            <div class="user-info">
+                <strong>Logged in as:</strong> <span id="currentUsername"></span>
+                <button class="btn btn-danger" onclick="logout()" style="width: auto; float: right; padding: 8px 16px;">Logout</button>
+            </div>
+
+            <div class="main-content">
+                <div class="sidebar">
+                    <!-- Admin Only: Map Selection -->
+                    <div class="card" id="adminCard" style="display: none;">
+                        <h3>Create Challenge Route</h3>
+                        <div class="instructions">
+                            <p><strong>Instructions:</strong></p>
+                            <p>1. Click "Start Selection"</p>
+                            <p>2. Click on map for start point</p>
+                            <p>3. Click on map for end point</p>
+                            <p>4. Click "Finalize Challenge"</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="startPointSelection()">Start Selection</button>
+                        <button class="btn btn-success" onclick="finalizeChallenge()" id="finalizeBtn" style="display:none;">Finalize Challenge</button>
+                    </div>
+
+                    <!-- Challenge Code Display -->
+                    <div class="card" id="challengeCodeCard" style="display: none;">
+                        <h3>Share This Code</h3>
+                        <div class="challenge-code">
+                            <h3>Challenge Code</h3>
+                            <div class="code" id="displayChallengeCode"></div>
+                        </div>
+                        <p style="text-align: center; color: #666;">Share this code with your friends so they can join!</p>
+                    </div>
+
+                    <!-- Log Activity -->
+                    <div class="card">
+                        <h3>Log Activity</h3>
+                        
+                        <div class="input-group">
+                            <label>Activity Type:</label>
+                            <div class="activity-selector" id="activityTypeSelector">
+                                <!-- Will be populated based on allowed activities -->
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label>Distance (km):</label>
+                            <input type="number" id="distanceInput" placeholder="0.0" step="0.1" min="0">
+                        </div>
+
+                        <button class="btn btn-primary" onclick="logActivity()">Log Activity</button>
+                    </div>
+
+                    <!-- Challenge Info -->
+                    <div class="card">
+                        <h3>Challenge Info</h3>
+                        <div id="challengeInfo">
+                            <p>Loading...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div id="map"></div>
+                    <div class="card" style="margin-top: 20px;">
+                        <h3>Team Progress</h3>
+                        <div id="progressList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let map;
+        let currentUser = null;
+        let isAdmin = false;
+        let challengeCode = null;
+        let startMarker = null;
+        let endMarker = null;
+        let routeLine = null;
+        let selectingPoints = false;
+        let userMarkers = {};
+        let selectedActivity = 'walk';
+        
+        const userColors = ['#667eea', '#51cf66', '#ff6b6b', '#ffd43b', '#845ef7', '#20c997'];
+
+        // Initialize map
+        function initMap() {
+            map = L.map('map').setView([40.7128, -74.0060], 13);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(map);
+
+            // Set up map click handler AFTER map is initialized
+            map.on('click', function(e) {
+                if (!selectingPoints || !isAdmin) return;
+
+                if (!startMarker) {
+                    startMarker = L.marker(e.latlng, {
+                        icon: L.icon({
+                            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+                            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                            iconSize: [25, 41],
+                            iconAnchor: [12, 41],
+                            popupAnchor: [1, -34],
+                            shadowSize: [41, 41]
+                        })
+                    }).addTo(map).bindPopup('START').openPopup();
+                    alert('Now click on the map to set the END point (red marker)');
+                } else if (!endMarker) {
+                    endMarker = L.marker(e.latlng, {
+                        icon: L.icon({
+                            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                            iconSize: [25, 41],
+                            iconAnchor: [12, 41],
+                            popupAnchor: [1, -34],
+                            shadowSize: [41, 41]
+                        })
+                    }).addTo(map).bindPopup('END').openPopup();
+                    
+                    routeLine = L.polyline([startMarker.getLatLng(), endMarker.getLatLng()], {
+                        color: '#667eea',
+                        weight: 4,
+                        opacity: 0.7
+                    }).addTo(map);
+                    
+                    selectingPoints = false;
+                    document.getElementById('finalizeBtn').style.display = 'block';
+                }
+            });
+        }
+
+        // Generate random challenge code
+        function generateChallengeCode() {
+            return Math.floor(100000 + Math.random() * 900000).toString();
+        }
+
+        // Setup functions
+        function createNewChallenge() {
+            const username = document.getElementById('usernameInput').value.trim();
+            if (!username) {
+                alert('Please enter your name!');
+                return;
+            }
+            
+            currentUser = username;
+            isAdmin = true;
+            challengeCode = generateChallengeCode();
+            
+            document.getElementById('setupScreen').classList.add('hidden');
+            document.getElementById('createScreen').classList.remove('hidden');
+        }
+
+        function showJoinScreen() {
+            const username = document.getElementById('usernameInput').value.trim();
+            if (!username) {
+                alert('Please enter your name!');
+                return;
+            }
+            
+            currentUser = username;
+            document.getElementById('setupScreen').classList.add('hidden');
+            document.getElementById('joinScreen').classList.remove('hidden');
+        }
+
+        function backToSetup() {
+            document.getElementById('setupScreen').classList.remove('hidden');
+            document.getElementById('joinScreen').classList.add('hidden');
+            document.getElementById('createScreen').classList.add('hidden');
+        }
+
+        async function joinChallenge() {
+            const code = document.getElementById('challengeCodeInput').value.trim();
+            if (!code || code.length !== 6) {
+                alert('Please enter a valid 6-digit code!');
+                return;
+            }
+
+            const challenge = await window.db.get(`challenge_${code}`);
+            if (!challenge) {
+                alert('Challenge not found! Please check the code.');
+                return;
+            }
+
+            challengeCode = code;
+            isAdmin = false;
+            
+            // Add user to participants
+            let participants = await window.db.get(`participants_${code}`) || [];
+            if (!participants.includes(currentUser)) {
+                participants.push(currentUser);
+                await window.db.set(`participants_${code}`, participants);
+            }
+
+            showMainScreen();
+        }
+
+        function toggleActivity(btn) {
+            btn.classList.toggle('active');
+        }
+
+        function continueToMap() {
+            const challengeName = document.getElementById('challengeNameInput').value.trim();
+            if (!challengeName) {
+                alert('Please enter a challenge name!');
+                return;
+            }
+
+            const activityBtns = document.querySelectorAll('#createScreen .activity-btn.active');
+            if (activityBtns.length === 0) {
+                alert('Please select at least one activity type!');
+                return;
+            }
+
+            showMainScreen();
+        }
+
+        function showMainScreen() {
+            document.getElementById('setupScreen').classList.add('hidden');
+            document.getElementById('joinScreen').classList.add('hidden');
+            document.getElementById('createScreen').classList.add('hidden');
+            document.getElementById('mainScreen').classList.remove('hidden');
+            
+            document.getElementById('currentUsername').textContent = currentUser;
+            
+            if (isAdmin) {
+                document.getElementById('adminCard').style.display = 'block';
+                document.getElementById('challengeCodeCard').style.display = 'block';
+                document.getElementById('displayChallengeCode').textContent = challengeCode;
+            }
+
+            initMap();
+            loadData();
+        }
+
+        // Map selection
+        function startPointSelection() {
+            selectingPoints = true;
+            if (startMarker) map.removeLayer(startMarker);
+            if (endMarker) map.removeLayer(endMarker);
+            if (routeLine) map.removeLayer(routeLine);
+            startMarker = null;
+            endMarker = null;
+            document.getElementById('finalizeBtn').style.display = 'none';
+            alert('Click on the map to set the START point (green marker)');
+        }
+
+        async function finalizeChallenge() {
+            if (!startMarker || !endMarker) {
+                alert('Please select start and end points first!');
+                return;
+            }
+
+            const challengeName = document.getElementById('challengeNameInput').value.trim();
+            const activityBtns = document.querySelectorAll('#createScreen .activity-btn.active');
+            const allowedActivities = Array.from(activityBtns).map(btn => btn.dataset.activity);
+
+            const start = startMarker.getLatLng();
+            const end = endMarker.getLatLng();
+            const distance = calculateDistance(start.lat, start.lng, end.lat, end.lng);
+
+            const challenge = {
+                name: challengeName,
+                start: { lat: start.lat, lng: start.lng },
+                end: { lat: end.lat, lng: end.lng },
+                distance: distance,
+                allowedActivities: allowedActivities,
+                creator: currentUser,
+                created: new Date().toISOString()
+            };
+
+            await window.db.set(`challenge_${challengeCode}`, challenge);
+            await window.db.set(`participants_${challengeCode}`, [currentUser]);
+            await window.db.set(`progress_${challengeCode}`, {});
+            await window.db.set(`activities_${challengeCode}`, {});
+
+            document.getElementById('adminCard').style.display = 'none';
+            loadData();
+            alert(`Challenge created! Share code ${challengeCode} with your friends!`);
+        }
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                     Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                     Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        async function logActivity() {
+            if (!currentUser) {
+                alert('Please log in first!');
+                return;
+            }
+
+            const distance = parseFloat(document.getElementById('distanceInput').value);
+            if (isNaN(distance) || distance <= 0) {
+                alert('Please enter a valid distance!');
+                return;
+            }
+
+            const challenge = await window.db.get(`challenge_${challengeCode}`);
+            if (!challenge.allowedActivities.includes(selectedActivity)) {
+                alert('This activity type is not allowed for this challenge!');
+                return;
+            }
+
+            let progress = await window.db.get(`progress_${challengeCode}`) || {};
+            let activities = await window.db.get(`activities_${challengeCode}`) || {};
+
+            if (!progress[currentUser]) progress[currentUser] = 0;
+            if (!activities[currentUser]) activities[currentUser] = [];
+
+            progress[currentUser] += distance;
+            activities[currentUser].push({
+                type: selectedActivity,
+                distance: distance,
+                timestamp: new Date().toISOString()
+            });
+
+            await window.db.set(`progress_${challengeCode}`, progress);
+            await window.db.set(`activities_${challengeCode}`, activities);
+
+            document.getElementById('distanceInput').value = '';
+            loadData();
+            alert('Activity logged successfully!');
+        }
+
+        async function loadData() {
+            if (!challengeCode) return;
+
+            const challenge = await window.db.get(`challenge_${challengeCode}`);
+            if (!challenge) return;
+
+            const progress = await window.db.get(`progress_${challengeCode}`) || {};
+            const participants = await window.db.get(`participants_${challengeCode}`) || [];
+
+            // Update activity selector
+            const activitySelector = document.getElementById('activityTypeSelector');
+            activitySelector.innerHTML = '';
+            challenge.allowedActivities.forEach(activity => {
+                const btn = document.createElement('button');
+                btn.className = 'activity-btn' + (activity === selectedActivity ? ' active' : '');
+                btn.dataset.activity = activity;
+                btn.textContent = activity === 'walk' ? '🚶 Walk' : activity === 'run' ? '🏃 Run' : '🏊 Swim';
+                btn.onclick = function() {
+                    document.querySelectorAll('#activityTypeSelector .activity-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    selectedActivity = this.dataset.activity;
+                };
+                activitySelector.appendChild(btn);
+            });
+
+            // Update challenge info
+            const challengeInfo = document.getElementById('challengeInfo');
+            challengeInfo.innerHTML = `
+                <div style="background: white; padding: 15px; border-radius: 8px;">
+                    <p><strong>Name:</strong> ${challenge.name}</p>
+                    <p><strong>Distance:</strong> ${challenge.distance.toFixed(2)} km</p>
+                    <p><strong>Activities:</strong> ${challenge.allowedActivities.join(', ')}</p>
+                    <p><strong>Participants:</strong> ${participants.length}</p>
+                </div>
+            `;
+
+            // Draw challenge on map
+            if (startMarker) map.removeLayer(startMarker);
+            if (endMarker) map.removeLayer(endMarker);
+            if (routeLine) map.removeLayer(routeLine);
+
+            startMarker = L.marker([challenge.start.lat, challenge.start.lng], {
+                icon: L.icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34],
+                    shadowSize: [41, 41]
+                })
+            }).addTo(map).bindPopup('START');
+
+            endMarker = L.marker([challenge.end.lat, challenge.end.lng], {
+                icon: L.icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34],
+                    shadowSize: [41, 41]
+                })
+            }).addTo(map).bindPopup('END');
+
+            routeLine = L.polyline([
+                [challenge.start.lat, challenge.start.lng],
+                [challenge.end.lat, challenge.end.lng]
+            ], {
+                color: '#667eea',
+                weight: 4,
+                opacity: 0.7
+            }).addTo(map);
+
+            map.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
+
+            // Update user positions
+            Object.values(userMarkers).forEach(marker => map.removeLayer(marker));
+            userMarkers = {};
+
+            participants.forEach((user, index) => {
+                const userProgress = progress[user] || 0;
+                const percentage = Math.min(userProgress / challenge.distance, 1);
+                
+                if (percentage > 0) {
+                    const lat = challenge.start.lat + (challenge.end.lat - challenge.start.lat) * percentage;
+                    const lng = challenge.start.lng + (challenge.end.lng - challenge.start.lng) * percentage;
+                    
+                    const marker = L.circleMarker([lat, lng], {
+                        radius: 10,
+                        fillColor: userColors[index % userColors.length],
+                        color: '#fff',
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    }).addTo(map).bindPopup(`${user}: ${userProgress.toFixed(2)} km (${(percentage * 100).toFixed(1)}%)`);
+                    
+                    userMarkers[user] = marker;
+                }
+            });
+
+            // Update progress list
+            const progressList = document.getElementById('progressList');
+            let html = '';
+            
+            participants.forEach((user, index) => {
+                const userProgress = progress[user] || 0;
+                const percentage = Math.min((userProgress / challenge.distance) * 100, 100);
+                
+                html += `
+                    <div class="progress-item">
+                        <strong style="color: ${userColors[index % userColors.length]}">${user}</strong>
+                        <div class="status-text">${userProgress.toFixed(2)} km / ${challenge.distance.toFixed(2)} km</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${percentage}%; background: ${userColors[index % userColors.length]}"></div>
+                        </div>
+                        <div class="status-text">${percentage.toFixed(1)}% complete</div>
+                    </div>
+                `;
+            });
+            
+            progressList.innerHTML = html || '<p>No participants yet</p>';
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                location.reload();
+            }
+        }
+
+        // Auto-refresh every 5 seconds
+        setInterval(() => {
+            if (challengeCode && !document.getElementById('mainScreen').classList.contains('hidden')) {
+                loadData();
+            }
+        }, 5000);
+    </script>
+</body>
+</html>
