@@ -478,7 +478,7 @@
         <!-- Main Screen -->
         <div id="mainScreen" class="main-screen hidden">
             <div class="user-info">
-                <strong>Logged in as:</strong>   <span id="currentUsername"></span>
+                <strong>Logged in as:</strong> <span id="currentUsername"></span>
                 <button class="btn btn-danger" onclick="logout()" style="width: auto; float: right; padding: 8px 16px;">Logout</button>
             </div>
 
@@ -568,7 +568,7 @@
         
         const userColors = ['#667eea', '#51cf66', '#ff6b6b', '#ffd43b', '#845ef7', '#20c997'];
 
-        // Map configurations
+        // Map configurations with working image URLs
         const mapConfigs = {
             realworld: {
                 name: 'Real World',
@@ -579,18 +579,20 @@
             middleearth: {
                 name: 'Middle Earth',
                 center: [0, 0],
-                zoom: 2,
+                zoom: 3,
                 type: 'image',
-                imageUrl: 'https://i.imgur.com/6jXQYZm.jpg', // Middle Earth map
-                bounds: [[-90, -180], [90, 180]]
+                // Using a solid color background for Middle Earth - users can replace with their own image
+                imageUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwMCIgaGVpZ2h0PSIyMDAwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIyMDAwIiBoZWlnaHQ9IjIwMDAiIGZpbGw9IiNkNGM1YjkiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1zaXplPSI0MCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+TWlkZGxlIEVhcnRoIE1hcDwvdGV4dD48dGV4dCB4PSI1MCUiIHk9IjU1JSIgZm9udC1zaXplPSIyMCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+Q2xpY2sgdG8gc2V0IHN0YXJ0IGFuZCBlbmQgcG9pbnRzPC90ZXh0Pjwvc3ZnPg==',
+                bounds: [[-100, -180], [100, 180]]
             },
             wizarding: {
                 name: 'Wizarding World',
-                center: [54.5, -3],
-                zoom: 6,
+                center: [0, 0],
+                zoom: 3,
                 type: 'image',
-                imageUrl: 'https://i.imgur.com/rKvHYXN.jpg', // UK Wizarding map
-                bounds: [[-90, -180], [90, 180]]
+                // Using a solid color background for Wizarding World - users can replace with their own image
+                imageUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwMCIgaGVpZ2h0PSIyMDAwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIyMDAwIiBoZWlnaHQ9IjIwMDAiIGZpbGw9IiNjNGRhZTQiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1zaXplPSI0MCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+V2l6YXJkaW5nIFdvcmxkIE1hcDwvdGV4dD48dGV4dCB4PSI1MCUiIHk9IjU1JSIgZm9udC1zaXplPSIyMCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+Q2xpY2sgdG8gc2V0IHN0YXJ0IGFuZCBlbmQgcG9pbnRzPC90ZXh0Pjwvc3ZnPg==',
+                bounds: [[-100, -180], [100, 180]]
             }
         };
 
