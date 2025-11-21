@@ -564,7 +564,8 @@
         
         const userColors = ['#667eea', '#51cf66', '#ff6b6b', '#ffd43b', '#845ef7', '#20c997'];
 
-        // Map configurations with your custom Middle Earth map
+        // Map configurations with accurate Middle Earth scale
+        // Based on the map scale bar: ~1 pixel = ~1.6 km
         const mapConfigs = {
             realworld: {
                 name: 'Real World',
@@ -577,9 +578,11 @@
                 center: [0, 0],
                 zoom: 3,
                 type: 'image',
-                // Using your Google Drive image
                 imageUrl: 'https://i.imgur.com/NrgFc4C.jpeg',
-                bounds: [[-100, -180], [100, 180]]
+                bounds: [[-100, -180], [100, 180]],
+                // Scale factor: approximately 1.6 km per coordinate unit
+                // This makes Shire to Mordor roughly 1800km as in Tolkien's world
+                scaleKmPerUnit: 1.6
             }
         };
 
@@ -889,11 +892,14 @@
         }
 
         function calculateDistance(lat1, lon1, lat2, lon2) {
-            // For Middle Earth map, use simple Euclidean distance
-            if (selectedMapType !== 'realworld') {
+            // For Middle Earth map, use accurate scale based on the map
+            if (selectedMapType === 'middleearth') {
+                const config = mapConfigs.middleearth;
                 const dx = lon2 - lon1;
                 const dy = lat2 - lat1;
-                return Math.sqrt(dx * dx + dy * dy) * 100; // Scale factor for reasonable distances
+                const euclideanDistance = Math.sqrt(dx * dx + dy * dy);
+                // Apply the scale factor from the map (1.6 km per unit)
+                return euclideanDistance * config.scaleKmPerUnit;
             }
             
             // Real world: Haversine formula
