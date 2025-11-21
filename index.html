@@ -446,10 +446,6 @@
                             <div class="icon">🗻</div>
                             <div class="label">Middle Earth</div>
                         </div>
-                        <div class="map-option" data-map="wizarding" onclick="selectMapType(this)">
-                            <div class="icon">🧙‍♂️</div>
-                            <div class="label">Wizarding World</div>
-                        </div>
                     </div>
                 </div>
 
@@ -568,7 +564,7 @@
         
         const userColors = ['#667eea', '#51cf66', '#ff6b6b', '#ffd43b', '#845ef7', '#20c997'];
 
-        // Map configurations with working image URLs
+        // Map configurations with your custom Middle Earth map
         const mapConfigs = {
             realworld: {
                 name: 'Real World',
@@ -581,17 +577,8 @@
                 center: [0, 0],
                 zoom: 3,
                 type: 'image',
-                // Using a solid color background for Middle Earth - users can replace with their own image
-                imageUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwMCIgaGVpZ2h0PSIyMDAwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIyMDAwIiBoZWlnaHQ9IjIwMDAiIGZpbGw9IiNkNGM1YjkiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1zaXplPSI0MCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+TWlkZGxlIEVhcnRoIE1hcDwvdGV4dD48dGV4dCB4PSI1MCUiIHk9IjU1JSIgZm9udC1zaXplPSIyMCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+Q2xpY2sgdG8gc2V0IHN0YXJ0IGFuZCBlbmQgcG9pbnRzPC90ZXh0Pjwvc3ZnPg==',
-                bounds: [[-100, -180], [100, 180]]
-            },
-            wizarding: {
-                name: 'Wizarding World',
-                center: [0, 0],
-                zoom: 3,
-                type: 'image',
-                // Using a solid color background for Wizarding World - users can replace with their own image
-                imageUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwMCIgaGVpZ2h0PSIyMDAwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIyMDAwIiBoZWlnaHQ9IjIwMDAiIGZpbGw9IiNjNGRhZTQiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1zaXplPSI0MCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+V2l6YXJkaW5nIFdvcmxkIE1hcDwvdGV4dD48dGV4dCB4PSI1MCUiIHk9IjU1JSIgZm9udC1zaXplPSIyMCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+Q2xpY2sgdG8gc2V0IHN0YXJ0IGFuZCBlbmQgcG9pbnRzPC90ZXh0Pjwvc3ZnPg==',
+                // Using your Google Drive image
+                imageUrl: 'https://drive.google.com/uc?export=view&id=1pFCPdezssFZPJdxlgkGHEMsluJKbhwtm',
                 bounds: [[-100, -180], [100, 180]]
             }
         };
@@ -703,7 +690,7 @@
                     maxZoom: 19
                 }).addTo(map);
             } else {
-                // Fantasy map with image overlay
+                // Middle Earth map with image overlay
                 const bounds = config.bounds;
                 imageOverlay = L.imageOverlay(config.imageUrl, bounds).addTo(map);
                 map.fitBounds(bounds);
@@ -902,7 +889,7 @@
         }
 
         function calculateDistance(lat1, lon1, lat2, lon2) {
-            // For fantasy maps, use simple Euclidean distance
+            // For Middle Earth map, use simple Euclidean distance
             if (selectedMapType !== 'realworld') {
                 const dx = lon2 - lon1;
                 const dy = lat2 - lat1;
